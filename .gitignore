@@ -1,0 +1,9 @@
+### App ###
+/data/
+
+### Composer ###
+bin/composer
+/vendor/
+
+### gitkeep ###
+!/**/.gitkeep

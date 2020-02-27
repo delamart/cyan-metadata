@@ -1,0 +1,10 @@
+{
+    "require": {
+        "slim/slim": "4.*",
+        "slim/psr7": "^1.0",
+        "nahid/jsonq": "^5.2",
+        "web-token/jwt-key-mgmt": "^2.1",
+        "web-token/jwt-signature": "^2.1",
+        "web-token/jwt-signature-algorithm-rsa": "^2.1"
+    }
+}
