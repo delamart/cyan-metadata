@@ -102,7 +102,57 @@ $app->get('/metadata/identity/oauth2/token', function (Request $request, Respons
 $app->get('/metadata/scheduledevents', function (Request $request, Response $response, $args) {
 });
 
-$app->get('/metadata/attested', function (Request $request, Response $response, $args) {
+$app->get('/metadata/attested', function (Request $request, Response $response, $args) use ($DATA_DIR) {
+
+    $params = $request->getServerParams();
+    $ip = $params['REMOTE_ADDR'];
+    $hostname = gethostbyaddr($ip);
+
+    $nonce = date('Ymd-His');
+    $created = date('d/m/y H:i:s O');
+    $expires = date('d/m/y H:i:s O', (time() + 3600));
+
+    $payload = json_encode([
+        "nonce" => $nonce,
+        "plan" => [
+            "name" => "",
+            "product" => "",
+            "publisher" => "",
+        ],
+        "timeStamp" => [
+            "createdOn" => $created,
+            "expiresOn" => $expires,
+        ],
+        "vmId" => $hostname,
+        "subscriptionId" => "xxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx",
+        "sku" => "",
+    ]);
+
+    $in_file = tempnam(sys_get_temp_dir(), 'in');
+    $out_file = tempnam(sys_get_temp_dir(), 'out');
+    try {
+        file_put_contents($in_file, $payload);
+        $key = file_get_contents($DATA_DIR . '/keys/cyan.key');
+        $crt = file_get_contents($DATA_DIR . '/keys/cyan.crt');
+        @openssl_pkcs7_sign($in_file, $out_file, $crt, $key, []);
+        $signature = base64_encode(file_get_contents($out_file));
+        if(!$signature) { throw new Exception('Empty Signature'); }
+
+        $payload = json_encode([
+            "encoding" => "pkcs7",
+            "signature" => $signature,
+        ]);
+
+        $response->getBody()->write($payload);
+    } catch(Exception $e) {
+        $response->getBody()->write(json_encode(["error" => $e->getMessage()]));
+        $response = $response->withStatus(500);
+    } finally {
+        unlink($in_file);
+        unlink($out_file);
+    }
+
+    return $response->withHeader('Content-Type', 'application/json');
 });
 
 $app->run();
