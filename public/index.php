@@ -1,6 +1,7 @@
 <?php
 
 use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Algorithm\RS256;
@@ -30,6 +31,15 @@ $app->get('/metadata/instance[/{path:.*}]', function (Request $request, Response
     if(empty(json_decode($payload))) { return $response->withStatus(404,'path not found'); }
 
     $response->getBody()->write($payload);
+
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+$app->get('/metadata/identity/discovery/keys', function (Request $request, Response $response, $args) use ($DATA_DIR) {
+
+    $jwk = JWKFactory::createFromKeyFile( $DATA_DIR . '/keys/cyan.crt' );
+    $jwkset = new JWKSet( [$jwk] );
+    $response->getBody()->write(json_encode($jwkset));
 
     return $response->withHeader('Content-Type', 'application/json');
 });
