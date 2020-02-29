@@ -1,6 +1,7 @@
 <?php
 
 use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\JWSBuilder;
@@ -37,7 +38,18 @@ $app->get('/metadata/instance[/{path:.*}]', function (Request $request, Response
 
 $app->get('/metadata/identity/discovery/keys', function (Request $request, Response $response, $args) use ($DATA_DIR) {
 
-    $jwk = JWKFactory::createFromKeyFile( $DATA_DIR . '/keys/cyan.crt' );
+    $jwk = JWKFactory::createFromCertificateFile( $DATA_DIR . '/keys/cyan.crt' );
+    $data = $jwk->toPublic()->all();
+    $jwk = JWKFactory::createFromValues([
+        'kty' => $data['kty'],
+        'use' => 'sig',
+        'kid' => $data['x5t'],
+        'x5t' => $data['x5t'],
+        'n' => $data['n'],
+        'e' => $data['e'],
+        'x5c' => $data['x5c'],
+    ]);
+
     $jwkset = new JWKSet( [$jwk] );
     $response->getBody()->write(json_encode($jwkset));
 
@@ -57,7 +69,9 @@ $app->get('/metadata/identity/oauth2/token', function (Request $request, Respons
     $serializer = new CompactSerializer(); // The serializer
 
     $jwk = JWKFactory::createFromKeyFile( $DATA_DIR . '/keys/cyan.key' );
-    $thumbprint= $jwk->thumbprint('sha1');
+
+    $jwk_cert = JWKFactory::createFromCertificateFile( $DATA_DIR . '/keys/cyan.crt' );
+    $thumbprint= $jwk_cert->toPublic()->thumbprint('sha1');
 
     $now = time();
     $expire = $now + 3600;
@@ -110,6 +124,8 @@ $app->get('/metadata/identity/oauth2/token', function (Request $request, Respons
 });
 
 $app->get('/metadata/scheduledevents', function (Request $request, Response $response, $args) {
+    $response->getBody()->write(json_encode(['error'=>'NOT IMPLEMENTED']));
+    return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 });
 
 $app->get('/metadata/attested', function (Request $request, Response $response, $args) use ($DATA_DIR) {
