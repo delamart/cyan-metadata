@@ -38,7 +38,7 @@ $app->get('/metadata/instance[/{path:.*}]', function (Request $request, Response
 
 $app->get('/metadata/identity/discovery/keys', function (Request $request, Response $response, $args) use ($DATA_DIR) {
 
-    $jwk = JWKFactory::createFromCertificateFile( $DATA_DIR . '/keys/cyan.crt' );
+    $jwk = JWKFactory::createFromCertificateFile( $DATA_DIR . '/keys/selfsigned.crt' );
     $data = $jwk->toPublic()->all();
     $jwk = JWKFactory::createFromValues([
         'kty' => $data['kty'],
@@ -68,10 +68,10 @@ $app->get('/metadata/identity/oauth2/token', function (Request $request, Respons
     $jwsBuilder = new JWSBuilder($algorithmManager);
     $serializer = new CompactSerializer(); // The serializer
 
-    $jwk = JWKFactory::createFromKeyFile( $DATA_DIR . '/keys/cyan.key' );
+    $jwk_key = JWKFactory::createFromKeyFile( $DATA_DIR . '/keys/selfsigned.key', 'password' );
 
-    $jwk_cert = JWKFactory::createFromCertificateFile( $DATA_DIR . '/keys/cyan.crt' );
-    $thumbprint= $jwk_cert->toPublic()->thumbprint('sha1');
+    $jwk_cert = JWKFactory::createFromCertificateFile( $DATA_DIR . '/keys/selfsigned.crt' );
+    $thumbprint= $jwk_cert->thumbprint('sha1');
 
     $now = time();
     $expire = $now + 3600;
@@ -102,10 +102,10 @@ $app->get('/metadata/identity/oauth2/token', function (Request $request, Respons
     ]);
     
     $jws = $jwsBuilder
-        ->create()                               // We want to create a new JWS
-        ->withPayload($payload)                  // We set the payload
-        ->addSignature($jwk, $header)            // We add a signature with a simple protected header
-        ->build();                               // We build it
+        ->create()
+        ->withPayload($payload)
+        ->addSignature($jwk_key, $header)
+        ->build();
     
     $token = $serializer->serialize($jws, 0); // We serialize the signature at index 0 (we only have one signature).
 
@@ -158,9 +158,9 @@ $app->get('/metadata/attested', function (Request $request, Response $response, 
     $out_file = tempnam(sys_get_temp_dir(), 'out');
     try {
         file_put_contents($in_file, $payload);
-        $key = file_get_contents($DATA_DIR . '/keys/cyan.key');
-        $crt = file_get_contents($DATA_DIR . '/keys/cyan.crt');
-        @openssl_pkcs7_sign($in_file, $out_file, $crt, $key, []);
+        $key = file_get_contents($DATA_DIR . '/keys/selfsigned.key');
+        $crt = file_get_contents($DATA_DIR . '/keys/selfsigned.crt');
+        @openssl_pkcs7_sign($in_file, $out_file, $crt, [$key, 'password'], []);
         $signature = base64_encode(file_get_contents($out_file));
         if(!$signature) { throw new Exception('Empty Signature'); }
 

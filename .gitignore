@@ -1,5 +1,10 @@
 ### App ###
-/data/
+/data/compute/*
+/data/keys/*
+/data/token/*
+
+# selfsigned certificate for testing #
+!/data/keys/selfsigned.*
 
 ### Composer ###
 bin/composer
