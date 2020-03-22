@@ -128,7 +128,7 @@ $app->get('/metadata/scheduledevents', function (Request $request, Response $res
     return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 });
 
-$app->get('/metadata/attested', function (Request $request, Response $response, $args) use ($DATA_DIR) {
+$app->get('/metadata/attested/document', function (Request $request, Response $response, $args) use ($DATA_DIR) {
 
     $params = $request->getServerParams();
     $ip = $params['REMOTE_ADDR'];
